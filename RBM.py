@@ -10,6 +10,9 @@ sigmoid = lambda X, A : (1.0/(1.0 + np.exp(-A*X)))
 
 class RBM:
     def __init__(self, nvis, nhid):
+        """
+        Initialise parameters for demo
+        """
         
         # Data generation
         self.Ndat      = 500     # number of data points
@@ -44,6 +47,9 @@ class RBM:
         
 
     def genData(self):
+        """
+        Generate data for demo
+        """
         c1 = 0.5
         r1 = 0.4
         r2 = 0.3
@@ -71,11 +77,6 @@ class RBM:
         print "X", np.size(X3[0:self.Ndat]), "Y", np.size(Y3)
         return(np.vstack((X4[0:self.Ndat],Y4[0:self.Ndat])))
 
-    def sigFun(self, X, A):
-        """
-        Sigmoidal Function
-        """
-        return(sigmoid(X,A))
 
     def activ(self, who):
         """
@@ -85,16 +86,19 @@ class RBM:
         """
         if(who=='hidden'):
             self.Shid = np.dot(self.Svis, self.W) + self.sig*np.random.standard_normal(self.nhid+1)
-            self.Shid = self.sigFun(self.Shid, self.Ahid)
+            self.Shid = sigmoid(self.Shid, self.Ahid)
             self.Shid[-1] = 1.0 # bias
 
         if(who=='visible'):
             self.Svis = np.dot(self.W, self.Shid) + self.sig*np.random.standard_normal(self.nvis+1)         
-            self.Svis = self.sigFun(self.Svis, self.Avis)
+            self.Svis = sigmoid(self.Svis, self.Avis)
             self.Svis[-1] = 1.0 # bias
 
 
     def learn(self, epochmax):
+        """
+        Train the RBM
+        """
 
         # Initialise arrays
         Err        = np.zeros( epochmax, dtype=np.float32)
@@ -124,12 +128,12 @@ class RBM:
                 self.Svis0[0:2] = self.dat[:,point]
                 self.Svis = self.Svis0
 
-                # positive phase
+                # positive phase activation
                 self.activ('hidden')
                 wpos = wpos + np.outer(self.Svis, self.Shid)
                 apos = apos + self.Shid*self.Shid
 
-                # negative phase
+                # negative phase activation
                 self.activ('visible')
                 self.activ('hidden')
                 
@@ -143,23 +147,26 @@ class RBM:
                 
                 delta = self.Svis0[0:2]-self.Svis[0:2]
 
-                # statistics
+                # Update error metrics
                 Err[epoch] = Err[epoch] + np.sum(delta*delta)
                 E[epoch]   =   E[epoch] - np.sum(np.dot(self.W.T, tmp))
                 
 
-            
+            # Update weight matrix
             self.dW = self.dW*self.moment + self.epsW * ((wpos-wneg)/np.size(self.dat) - self.cost*self.W)
             self.W  = self.W + self.dW
 
             self.Ahid = self.Ahid + self.epsA*(apos-aneg)/(np.size(self.dat)*self.Ahid*self.Ahid)
 
+            # Normalise errors
             Err[epoch] = Err[epoch]/(self.nvis*np.size(self.dat))
             E[epoch]   =   E[epoch]/np.size(self.dat)
 
+            # Debug messages
             if (epoch==1) or (epoch%100==0) or (epoch==epochmax):
                 print "epoch:", epoch, "err:", np.round_(Err[epoch], 6), "ksteps:", ksteps
             
+            # Store statistics
             self.stat[ epoch] = self.W[0,0]
             self.stat2[epoch] = self.Ahid[0]
 
@@ -168,12 +175,18 @@ class RBM:
         
 
     def wview(self):
+        """
+        Plot weights for visualisation.
+        """
         import pylab as p
         p.plot(xrange(np.size(self.W[2])),self.W[2], 'bo')
         p.show()
 
 
     def reconstruct(self, Npoint, Nsteps):
+        """
+        Run some data through the network.
+        """
         X           = np.array(np.random.random_sample(Npoint))
         Y           = np.array(np.random.random_sample(Npoint))
         datnew      = np.vstack((X, Y))
@@ -182,12 +195,15 @@ class RBM:
         for point in xrange(Npoint):
             self.Svis[0:2] = datnew[:,point]
             for recstep in xrange(Nsteps): 
-                self.activ(1)
-                self.activ(0)
+                self.activ('hidden')
+                self.activ('visible')
         
             self.datout[:,point] = self.Svis[0:2]
             
     def contour(self, p, dat):
+        """
+        KDE contour plot.
+        """
 
         X, Y      = mgrid[0.0:1.0:100j, 0.0:1.0:100j]
         positions = c_[X.ravel(), Y.ravel()]
@@ -212,19 +228,7 @@ if __name__ == "__main__":
 
     pdb.set_trace()
 
-    kkk=0 # 0 is nicer plot with KDE of points
-    p.figure(3)
-    if kkk==1:
-        p.plot(rbm.dat[0,:],rbm.dat[1,:], 'bo')
-        p.axis([0.0, 1.0, 0.0, 1.0])
-    else:
-        rbm.contour(p, rbm.dat)
-        p.savefig("dat.png",dpi=100)
-
-    p.show()
-    
-
-
+    #kkk=0 # 0 is nicer plot with KDE of points
 
     # Train the RBM
     rbm.learn(20)
@@ -235,6 +239,13 @@ if __name__ == "__main__":
     p.figure(2)
     p.plot(xrange(np.size(rbm.Err)),rbm.Err, 'r.')
 
+    p.figure(3)
+    if kkk==1:
+        p.plot(rbm.dat[0,:],rbm.dat[1,:], 'bo')
+        p.axis([0.0, 1.0, 0.0, 1.0])
+    else:
+        rbm.contour(p, rbm.dat)
+        p.savefig("dat.png",dpi=100)
 
     # Test the RBM
     rbm.reconstruct(rbm.Ndat, 1)
