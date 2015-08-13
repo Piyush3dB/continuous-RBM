@@ -1,8 +1,9 @@
 
+import pdb   as pdb
 import numpy as np
 import pylab as p
-from scipy import stats, mgrid, c_, reshape, random, rot90
-import pdb as pdb
+
+from scipy import c_, reshape, random, rot90, stats, mgrid
 #import psyco
 #psyco.full()
 
@@ -134,8 +135,8 @@ class RBM:
                 apos = apos + self.Shid*self.Shid
 
                 # negative phase activation
-                self.activ('visible')
-                self.activ('hidden')
+                #self.activ('visible')
+                #self.activ('hidden')
                 
                 for recstep in xrange(ksteps): 
                     self.activ('visible')
@@ -226,12 +227,12 @@ if __name__ == "__main__":
     # Create RBM instance
     rbm = RBM(2,8)
 
-    pdb.set_trace()
+    #pdb.set_trace()
 
     #kkk=0 # 0 is nicer plot with KDE of points
 
     # Train the RBM
-    rbm.learn(20)
+    rbm.learn(4000)
     
     p.figure(1)
     p.plot(xrange(np.size(rbm.E)),rbm.E, 'b+')
