@@ -18,6 +18,7 @@ class RBM:
         # Data generation
         self.Ndat      = 500     # number of data points
         self.dat       = self.genData()
+        #self.dat = 
 
         # Parameters
         self.sig       = 0.2     # standard deviation for ??
@@ -110,27 +111,32 @@ class RBM:
         ksteps = 1
         
         for epoch in range(1,epochmax):
+
+            # Initialise weights for positive and negative directions
             wpos = np.zeros( (self.nvis+1, self.nhid+1), dtype=np.float32)
             wneg = np.zeros( (self.nvis+1, self.nhid+1), dtype=np.float32)
+
+            # Initialise activations for positive and negative directions
             apos = np.zeros(               self.nhid+1 , dtype=np.float32)
             aneg = np.zeros(               self.nhid+1 , dtype=np.float32)
-                
-            if(epoch>0):
-                ksteps=50
-
-            if(epoch>1000):
-                ksteps=(epoch-epoch%100)/100+40
-
+            
+            # Steps size adaptation
+            ksteps=50 if(epoch>0) else ksteps
+            ksteps=((epoch-epoch%100)/100+40) if(epoch>1000) else ksteps
             self.ksteps = ksteps
             
+            # Iterate through data sample
             for point in xrange(self.Ndat):
 
+                # Select a coordinate point
                 #print(self.dat[:][point])
-                self.Svis0[0:2] = self.dat[:,point]
-                self.Svis = self.Svis0
+                self.Svis0[0:2] = self.dat[:,point] # Save a copy of the visible state
+                self.Svis = self.Svis0              # Initialise the visible state
 
                 # positive phase activation
                 self.activ('hidden')
+
+                # Use hidden state to calc the positive direction w and a
                 wpos = wpos + np.outer(self.Svis, self.Shid)
                 apos = apos + self.Shid*self.Shid
 
@@ -227,9 +233,9 @@ if __name__ == "__main__":
     # Create RBM instance
     rbm = RBM(2,8)
 
-    #pdb.set_trace()
+    pdb.set_trace()
 
-    #kkk=0 # 0 is nicer plot with KDE of points
+    kkk=0 # 0 is nicer plot with KDE of points
 
     # Train the RBM
     rbm.learn(4000)
